@@ -35,7 +35,7 @@ export function Login() {
         navigate(from && !from.startsWith('/admin') && !from.startsWith('/staff') ? from : '/', { replace: true })
       }
     } catch (err) {
-      setError(errorMessage(err, 'Tên đăng nhập hoặc mật khẩu không đúng.'))
+      setError(errorMessage(err, 'Không thể kết nối máy chủ. Vui lòng kiểm tra backend hoặc dùng chế độ demo.'))
     } finally {
       setLoading(false)
     }

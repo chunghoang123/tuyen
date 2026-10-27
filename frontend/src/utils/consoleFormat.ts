@@ -50,7 +50,9 @@ export function initials(name?: string): string {
 export function errorMessage(error: unknown, fallback = 'Có lỗi xảy ra, vui lòng thử lại'): string {
   if (typeof error === 'object' && error !== null) {
     const maybe = error as { response?: { data?: { message?: string } }; message?: string }
-    return maybe.response?.data?.message || maybe.message || fallback
+    const serverMessage = maybe.response?.data?.message
+    if (serverMessage) return serverMessage
+    if (maybe.response) return maybe.message || fallback
   }
   return fallback
 }
