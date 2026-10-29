@@ -27,14 +27,24 @@ export function buildDates(count = 7) {
   return Array.from({ length: count }).map((_, index) => {
     const date = new Date()
     date.setDate(date.getDate() + index)
+    const day = date.getDate().toString().padStart(2, '0')
+    const month = `${date.getMonth() + 1}`.padStart(2, '0')
     return {
-      key: date.toISOString().slice(0, 10),
+      key: `${date.getFullYear()}-${month}-${day}`,
       weekday: days[date.getDay()],
-      day: date.getDate().toString().padStart(2, '0'),
-      month: `${date.getMonth() + 1}`.padStart(2, '0'),
-      label: `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`,
+      day,
+      month,
+      label: `${day}/${month}`,
     }
   })
+}
+
+/** Khóa ngày theo giờ địa phương, dùng để so khớp với startTime của suất chiếu. */
+export function localDateKey(value: string | Date): string {
+  const date = typeof value === 'string' ? new Date(value) : value
+  const day = date.getDate().toString().padStart(2, '0')
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
 }
 
 export function minutesToTime(minutes: number): string {

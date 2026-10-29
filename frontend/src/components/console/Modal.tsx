@@ -9,13 +9,27 @@ interface ModalProps {
   children: ReactNode
   footer?: ReactNode
   size?: 'sm' | 'md' | 'lg'
+  /**
+   * Cho phép đóng bằng nút X, phím Escape hoặc bấm ra ngoài.
+   * Đặt false với modal đang chờ thanh toán để buộc người dùng xử lý xong.
+   */
+  dismissible?: boolean
 }
 
-export function Modal({ open, title, subtitle, onClose, children, footer, size = 'md' }: ModalProps) {
+export function Modal({
+  open,
+  title,
+  subtitle,
+  onClose,
+  children,
+  footer,
+  size = 'md',
+  dismissible = true,
+}: ModalProps) {
   useEffect(() => {
     if (!open) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape' && dismissible) onClose()
     }
     document.addEventListener('keydown', onKeyDown)
     document.body.style.overflow = 'hidden'
@@ -23,7 +37,7 @@ export function Modal({ open, title, subtitle, onClose, children, footer, size =
       document.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = ''
     }
-  }, [open, onClose])
+  }, [open, dismissible, onClose])
 
   if (!open) return null
 
@@ -31,7 +45,7 @@ export function Modal({ open, title, subtitle, onClose, children, footer, size =
     <div
       className="console-modal-backdrop"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose()
+        if (dismissible && event.target === event.currentTarget) onClose()
       }}
     >
       <div className={`console-modal console-modal--${size}`} role="dialog" aria-modal="true">
@@ -40,9 +54,11 @@ export function Modal({ open, title, subtitle, onClose, children, footer, size =
             <h3>{title}</h3>
             {subtitle && <p>{subtitle}</p>}
           </div>
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="Đóng">
-            <Icon name="close" size={18} />
-          </button>
+          {dismissible && (
+            <button type="button" className="icon-btn" onClick={onClose} aria-label="Đóng">
+              <Icon name="close" size={18} />
+            </button>
+          )}
         </div>
         <div className="console-modal__body">{children}</div>
         {footer && <div className="console-modal__foot">{footer}</div>}

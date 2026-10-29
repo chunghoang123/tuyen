@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMovie, useMovies } from '../hooks/useMovies'
-import { cinemas, showtimesFor } from '../data/mockData'
+import { useShowtimes } from '../hooks/useShowtimes'
 import { formatDuration, formatVnd } from '../utils/format'
+import { formatTime } from '../utils/consoleFormat'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Icon } from '../components/ui/Icon'
 import { MovieCard } from '../components/ui/MovieCard'
@@ -13,6 +14,7 @@ export function MovieDetail() {
   const navigate = useNavigate()
   const { movie, loading } = useMovie(id)
   const { movies } = useMovies()
+  const { showtimes } = useShowtimes(movie?.id)
   const [expanded, setExpanded] = useState(false)
   const [trailerOpen, setTrailerOpen] = useState(false)
 
@@ -44,7 +46,7 @@ export function MovieDetail() {
     )
   }
 
-  const slots = showtimesFor(movie.id).slice(0, 4)
+  const slots = showtimes.slice(0, 4)
   const related = movies.filter((item) => item.id !== movie.id).slice(0, 5)
 
   return (
@@ -164,9 +166,14 @@ export function MovieDetail() {
             </div>
             <div className="row gap-6" style={{ marginBottom: 14, color: 'var(--muted)', fontSize: 12 }}>
               <Icon name="location" size={14} />
-              {cinemas[0].name}
+              {slots[0]?.cinemaName ?? 'Cinex'}
             </div>
             <div className="showtime-slots" style={{ marginBottom: 16 }}>
+              {slots.length === 0 && (
+                <p className="muted" style={{ fontSize: 13 }}>
+                  Chưa có suất chiếu cho phim này.
+                </p>
+              )}
               {slots.map((slot, index) => (
                 <button
                   key={slot.id}
@@ -174,8 +181,8 @@ export function MovieDetail() {
                   className={`slot ${index === 0 ? 'is-active' : ''}`}
                   onClick={() => navigate(`/seats/${slot.id}`)}
                 >
-                  <strong>{slot.time}</strong>
-                  <span>{formatVnd(slot.price)}</span>
+                  <strong>{formatTime(slot.startTime)}</strong>
+                  <span>{formatVnd(Number(slot.basePrice))}</span>
                 </button>
               ))}
             </div>
@@ -184,7 +191,7 @@ export function MovieDetail() {
             </Link>
             <div className="secure-note" style={{ marginTop: 14 }}>
               <Icon name="shield" size={15} />
-              Thanh toán an toàn, giữ ghế trong 10 phút.
+              Thanh toán an toàn, ghế được giữ ngay khi thanh toán xong.
             </div>
           </div>
         </aside>

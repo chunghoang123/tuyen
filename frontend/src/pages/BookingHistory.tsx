@@ -1,25 +1,84 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { bookings } from '../data/mockData'
+import { bookingService } from '../services/bookingService'
+import { authService } from '../services/authService'
+import type { Booking } from '../types/Admin'
 import { formatVnd } from '../utils/format'
+import { errorMessage, formatTime } from '../utils/consoleFormat'
 import { Icon } from '../components/ui/Icon'
 import { PageBar } from '../components/ui/PageBar'
+import { openChat } from '../components/chat/ChatWidget'
 
 const tabs = [
   { value: 'UPCOMING', label: 'Sắp chiếu' },
   { value: 'COMPLETED', label: 'Đã xem' },
 ] as const
 
+const STATUS_LABEL: Record<string, string> = {
+  PENDING: 'Chờ thanh toán',
+  CONFIRMED: 'Đã thanh toán',
+  CANCELLED: 'Đã hủy',
+  EXPIRED: 'Hết hạn',
+}
+
 export function BookingHistory() {
   const [tab, setTab] = useState<'UPCOMING' | 'COMPLETED'>('UPCOMING')
-  const [items, setItems] = useState(bookings)
-  const visible = items.filter((booking) => booking.status === tab)
+  const [items, setItems] = useState<Booking[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const authenticated = authService.isAuthenticated()
 
-  const handleCancel = (id: number) => {
-    if (!window.confirm('Bạn có chắc muốn hủy vé này? Tiền sẽ được hoàn về phương thức thanh toán ban đầu.')) {
+  useEffect(() => {
+    if (!authenticated) {
+      setLoading(false)
       return
     }
-    setItems((current) => current.filter((booking) => booking.id !== id))
+    let cancelled = false
+    bookingService
+      .getMyBookings()
+      .then((data) => {
+        if (!cancelled) setItems(data)
+      })
+      .catch((err) => {
+        if (!cancelled) setError(errorMessage(err, 'Không tải được danh sách vé'))
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [authenticated])
+
+  const { upcoming, completed } = useMemo(() => {
+    const now = Date.now()
+    const upcomingItems = items.filter(
+      (booking) =>
+        booking.status === 'PENDING' ||
+        (booking.status === 'CONFIRMED' && new Date(booking.showtime.startTime).getTime() >= now),
+    )
+    return {
+      upcoming: upcomingItems,
+      completed: items.filter((booking) => !upcomingItems.includes(booking)),
+    }
+  }, [items])
+
+  const visible = tab === 'UPCOMING' ? upcoming : completed
+
+  if (!authenticated) {
+    return (
+      <div className="container">
+        <PageBar title="Vé của tôi" backTo="/" />
+        <div className="empty-state">
+          <Icon name="ticket" size={40} />
+          <strong>Đăng nhập để xem vé</strong>
+          <p>Bạn cần đăng nhập để xem lịch sử và vé điện tử đã đặt.</p>
+          <Link to="/login" state={{ from: '/history' }} className="btn btn-primary btn-sm">
+            Đăng nhập
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -41,7 +100,18 @@ export function BookingHistory() {
             ))}
           </div>
 
-          {visible.length === 0 ? (
+          {loading ? (
+            <div className="loading-screen">
+              <span className="spinner" />
+              Đang tải vé...
+            </div>
+          ) : error ? (
+            <div className="empty-state">
+              <Icon name="alert" size={40} />
+              <strong>Không tải được vé</strong>
+              <p>{error}</p>
+            </div>
+          ) : visible.length === 0 ? (
             <div className="empty-state">
               <Icon name="ticket" size={40} />
               <strong>Chưa có vé nào</strong>
@@ -52,50 +122,61 @@ export function BookingHistory() {
             </div>
           ) : (
             <div>
-              {visible.map((booking) => (
-                <div key={booking.id} className="booking-item">
-                  <img src={booking.posterUrl} alt={booking.movieTitle} loading="lazy" />
-                  <div className="booking-item__body">
-                    <div className="row between gap-8">
-                      <div className="booking-item__title">{booking.movieTitle}</div>
-                      <span className={`badge ${booking.status === 'UPCOMING' ? 'badge-success' : 'badge-muted'}`}>
-                        {booking.status === 'UPCOMING' ? 'Sắp chiếu' : 'Đã xem'}
-                      </span>
-                    </div>
-                    <div className="booking-item__meta">
-                      {booking.cinema} · {booking.hall}
-                    </div>
-                    <div className="booking-item__meta">
-                      <Icon name="calendar" size={12} /> {booking.date} · {booking.time} · Ghế {booking.seats.join(', ')}
-                    </div>
-                    <div className="row between gap-8" style={{ marginTop: 4 }}>
-                      <span className="booking-item__meta">Mã: {booking.code}</span>
-                      <strong style={{ fontSize: 13 }}>{formatVnd(booking.total)}</strong>
-                    </div>
-                    <div className="booking-item__actions">
-                      {booking.status === 'UPCOMING' ? (
-                        <>
-                          <Link to={`/ticket/${booking.code}`} className="btn btn-accent btn-sm">
+              {visible.map((booking) => {
+                const showtime = booking.showtime
+                const seats = booking.seats.map((seat) => seat.seatCode)
+                const canViewTicket = booking.status === 'CONFIRMED'
+                const badgeClass =
+                  booking.status === 'CONFIRMED'
+                    ? 'badge-success'
+                    : booking.status === 'PENDING'
+                      ? 'badge-warning'
+                      : 'badge-muted'
+                return (
+                  <div key={booking.id} className="booking-item">
+                    <img src={showtime.posterUrl} alt={showtime.movieTitle} loading="lazy" />
+                    <div className="booking-item__body">
+                      <div className="row between gap-8">
+                        <div className="booking-item__title">{showtime.movieTitle}</div>
+                        <span className={`badge ${badgeClass}`}>
+                          {STATUS_LABEL[booking.status] ?? booking.status}
+                        </span>
+                      </div>
+                      <div className="booking-item__meta">
+                        {showtime.cinemaName} · {showtime.auditoriumName}
+                      </div>
+                      <div className="booking-item__meta">
+                        <Icon name="calendar" size={12} /> {formatTime(showtime.startTime)} · Ghế{' '}
+                        {seats.join(', ')}
+                      </div>
+                      <div className="row between gap-8" style={{ marginTop: 4 }}>
+                        <span className="booking-item__meta">Mã: {booking.bookingCode}</span>
+                        <strong style={{ fontSize: 13 }}>{formatVnd(Number(booking.totalAmount))}</strong>
+                      </div>
+                      <div className="booking-item__actions">
+                        {booking.status === 'PENDING' ? (
+                          <Link
+                            to={`/booking/payment?code=${booking.bookingCode}`}
+                            className="btn btn-accent btn-sm"
+                          >
+                            <Icon name="qr" size={14} />
+                            Thanh toán
+                          </Link>
+                        ) : canViewTicket ? (
+                          <Link to={`/ticket/${booking.bookingCode}`} className="btn btn-accent btn-sm">
                             <Icon name="qr" size={14} />
                             Xem vé
                           </Link>
-                          <button
-                            type="button"
-                            className="btn btn-outline btn-sm"
-                            onClick={() => handleCancel(booking.id)}
-                          >
-                            Hủy vé
-                          </button>
-                        </>
-                      ) : (
-                        <Link to={`/movies/${booking.movieId}`} className="btn btn-ghost btn-sm">
-                          Đặt lại
-                        </Link>
-                      )}
+                        ) : (
+                          <Link to={`/movies/${showtime.movieId}`} className="btn btn-ghost btn-sm">
+                            Đặt lại
+                          </Link>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
@@ -117,10 +198,10 @@ export function BookingHistory() {
             <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
               Liên hệ Cinex qua hotline 1900 1234 hoặc chat với trợ lý AI.
             </p>
-            <Link to="/ai-chat" className="btn btn-ghost btn-block btn-sm">
+            <button type="button" className="btn btn-ghost btn-block btn-sm" onClick={openChat}>
               <Icon name="chat" size={15} />
               Chat với Cinex AI
-            </Link>
+            </button>
           </div>
         </aside>
       </div>

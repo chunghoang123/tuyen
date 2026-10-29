@@ -10,13 +10,14 @@ import { ShowtimeList } from './pages/ShowtimeList'
 import { SeatSelection } from './pages/SeatSelection'
 import { BookingConfirm } from './pages/BookingConfirm'
 import { Payment } from './pages/Payment'
+import { PaymentReturn } from './pages/PaymentReturn'
 import { TicketView } from './pages/TicketView'
 import { Login } from './pages/Login'
 import { Register } from './pages/Register'
 import { BookingHistory } from './pages/BookingHistory'
 import { Profile } from './pages/Profile'
 import { Search } from './pages/Search'
-import { AIChat } from './pages/AIChat'
+import { ChatWidget } from './components/chat/ChatWidget'
 import { AdminLayout } from './components/console/AdminLayout'
 import { StaffLayout } from './components/console/StaffLayout'
 import { ProtectedRoute } from './components/console/ProtectedRoute'
@@ -57,13 +58,15 @@ function Shell() {
           <Route path="/seats/:showtimeId" element={<SeatSelection />} />
           <Route path="/booking/confirm" element={<BookingConfirm />} />
           <Route path="/booking/payment" element={<Payment />} />
+          <Route path="/payment/return" element={<PaymentReturn />} />
+          <Route path="/payment/cancel" element={<PaymentReturn cancelled />} />
           <Route path="/ticket/:bookingId" element={<TicketView />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/history" element={<BookingHistory />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/search" element={<Search />} />
-          <Route path="/ai-chat" element={<AIChat />} />
+
 
           <Route
             path="/admin"
@@ -101,6 +104,7 @@ function Shell() {
       </main>
       {!isConsole && !isAuthPage && <Footer />}
       {!isConsole && !isAuthPage && <BottomNav />}
+      {!isConsole && <ChatWidget />}
     </div>
   )
 }

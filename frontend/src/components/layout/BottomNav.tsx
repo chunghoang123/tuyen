@@ -4,7 +4,6 @@ import { Icon, type IconName } from '../ui/Icon'
 const items: Array<{ to: string; label: string; icon: IconName }> = [
   { to: '/', label: 'Trang chủ', icon: 'home' },
   { to: '/search', label: 'Tìm kiếm', icon: 'search' },
-  { to: '/ai-chat', label: 'AI Chat', icon: 'chat' },
   { to: '/history', label: 'Vé', icon: 'ticket' },
   { to: '/profile', label: 'Tài khoản', icon: 'user' },
 ]

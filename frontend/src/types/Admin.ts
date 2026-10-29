@@ -166,15 +166,17 @@ export interface StaffSalePayload {
   seatIds: number[]
   customerName?: string
   customerPhone?: string
-  paymentMethod: 'CASH' | 'CARD' | 'TRANSFER'
+  paymentMethod: 'CASH' | 'CARD' | 'TRANSFER' | 'PAYOS'
   snackAmount?: number
   snackNote?: string
 }
 
 export interface StaffSale {
   booking: Booking
-  ticketCode: string
+  ticketCode: string | null
   qrCode: string
+  checkoutUrl?: string
+  paymentLinkId?: string
 }
 
 export interface ShiftSummary {

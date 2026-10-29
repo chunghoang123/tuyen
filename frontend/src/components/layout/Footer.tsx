@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Icon } from '../ui/Icon'
 import { Logo } from '../ui/Logo'
+import { openChat } from '../chat/ChatWidget'
 
 export function Footer() {
   return (
@@ -24,7 +25,9 @@ export function Footer() {
             <Link to="/movies">Phim đang chiếu</Link>
             <Link to="/movies">Phim sắp chiếu</Link>
             <Link to="/showtimes">Lịch chiếu</Link>
-            <Link to="/ai-chat">Trợ lý AI</Link>
+            <button type="button" className="footer-link" onClick={openChat}>
+              Trợ lý AI
+            </button>
           </div>
 
           <div>

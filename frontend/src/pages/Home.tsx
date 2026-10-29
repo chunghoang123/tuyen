@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMovies } from '../hooks/useMovies'
-import { cinemas, demoUser, quickGenres } from '../data/mockData'
+import { cinemas, quickGenres } from '../data/mockData'
+import { authService } from '../services/authService'
 import { formatDuration } from '../utils/format'
 import { Avatar } from '../components/ui/Avatar'
 import { Icon } from '../components/ui/Icon'
@@ -10,6 +11,8 @@ import { SectionHeader } from '../components/ui/SectionHeader'
 
 export function Home() {
   const { movies } = useMovies()
+  const session = authService.getUser()
+  const greetingName = session ? session.fullName || session.username : 'Khách'
   const [heroIndex, setHeroIndex] = useState(0)
   const featured = useMemo(() => movies.filter((movie) => movie.status === 'NOW_SHOWING').slice(0, 3), [movies])
   const hero = featured[heroIndex % Math.max(featured.length, 1)] ?? movies[0]
@@ -26,10 +29,10 @@ export function Home() {
     <div className="container">
       <div className="greeting">
         <div className="greeting__left">
-          <Avatar src={demoUser.avatar} alt={demoUser.name} />
+          <Avatar alt={greetingName} />
           <div>
             <div className="greeting__hello">Chào buổi tối,</div>
-            <div className="greeting__name">{demoUser.name}</div>
+            <div className="greeting__name">{greetingName}</div>
           </div>
         </div>
         <Link to="/history" className="header-icon" aria-label="Thông báo">

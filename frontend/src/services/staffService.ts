@@ -28,6 +28,10 @@ export const staffService = {
     const res = await api.post<Envelope<StaffSale>>('/staff/sales', payload)
     return res.data.data
   },
+  createPayosSale: async (payload: StaffSalePayload): Promise<StaffSale> => {
+    const res = await api.post<Envelope<StaffSale>>('/staff/sales/payos', payload)
+    return res.data.data
+  },
   searchBookings: async (q?: string): Promise<Booking[]> => {
     const res = await api.get<Envelope<Booking[]>>('/staff/bookings', { params: { q } })
     return res.data.data
